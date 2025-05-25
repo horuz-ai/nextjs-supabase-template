@@ -24,10 +24,11 @@ type PhoneData = z.infer<typeof phoneSchema>
 type OTPData = z.infer<typeof otpSchema>
 
 interface PhoneAuthFormProps {
+  mode?: 'signin' | 'signup'
   redirectTo?: string
 }
 
-export function PhoneAuthForm({ redirectTo = '/dashboard' }: PhoneAuthFormProps) {
+export function PhoneAuthForm({ mode = 'signin', redirectTo = '/dashboard' }: PhoneAuthFormProps) {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [phone, setPhone] = useState('')
@@ -45,7 +46,7 @@ export function PhoneAuthForm({ redirectTo = '/dashboard' }: PhoneAuthFormProps)
       
       const result = await signInWithOtp({
         phone: data.phone,
-        type: 'sms'
+        type: mode === 'signup' ? 'signup' : 'sms'
       })
 
       if (result.error) {
@@ -121,7 +122,7 @@ export function PhoneAuthForm({ redirectTo = '/dashboard' }: PhoneAuthFormProps)
       
       const result = await signInWithOtp({
         phone,
-        type: 'sms'
+        type: mode === 'signup' ? 'signup' : 'sms'
       })
 
       if (result.error) {

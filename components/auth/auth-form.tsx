@@ -56,7 +56,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
             </TabsContent>
             
             <TabsContent value="phone" className="mt-4">
-              <PhoneAuthForm redirectTo={redirectTo} />
+              <PhoneAuthForm mode={mode} redirectTo={redirectTo} />
             </TabsContent>
           </Tabs>
         </div>
