@@ -42,6 +42,8 @@ This is a Next.js 15 application with App Router, featuring:
    - Client/server utilities in `/utils/supabase/`
    - Automatic session refresh
    - Local Supabase instance for development
+   - Multiple auth methods: Email/Password, Magic Link, Phone/SMS, Google OAuth
+   - OAuth callback handler at `/auth/callback`
 
 3. **UI Components**: Complete shadcn/ui library (40+ components) using:
    - Radix UI primitives
@@ -63,6 +65,13 @@ This is a Next.js 15 application with App Router, featuring:
 - Environment variables: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - Middleware runs on all routes for session management
 - Configuration in `/supabase/config.toml`
+
+### Google OAuth Setup
+- Requires Google Cloud Console configuration (see `GOOGLE_OAUTH_SETUP.md`)
+- Environment variables: `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`
+- OAuth provider enabled in `/supabase/config.toml`
+- Callback URL: `http://localhost:54321/auth/v1/callback` (local)
+- Social login button component at `/components/auth/social-login-buttons.tsx`
 
 ### Component Usage
 - Import from `@/components/ui/` for shadcn components

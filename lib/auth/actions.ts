@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { AuthError, SignInData, SignUpData, OTPData, AuthResponse } from './types'
-import { redirect } from 'next/navigation'
 
 export async function signUp({ email, password, phone, options }: SignUpData): Promise<AuthResponse> {
   const supabase = await createClient()
@@ -28,7 +27,7 @@ export async function signUp({ email, password, phone, options }: SignUpData): P
   }
 }
 
-export async function signIn({ email, password, phone, provider }: SignInData): Promise<AuthResponse> {
+export async function signIn({ email, password, phone, provider, redirectTo }: SignInData): Promise<AuthResponse> {
   const supabase = await createClient()
   
   try {
@@ -36,13 +35,19 @@ export async function signIn({ email, password, phone, provider }: SignInData): 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`
+          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback${redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : ''}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
       
       if (error) throw error
+      
+      // Return the OAuth URL for client-side redirect instead of using server redirect
       if (data.url) {
-        redirect(data.url)
+        return { data: { ...data, url: data.url, needsRedirect: true } }
       }
       return { data }
     } else if (email && password) {

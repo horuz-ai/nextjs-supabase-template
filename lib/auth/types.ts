@@ -29,6 +29,7 @@ export interface SignInData {
   password?: string
   phone?: string
   provider?: 'google'
+  redirectTo?: string
 }
 
 export interface OTPData {
