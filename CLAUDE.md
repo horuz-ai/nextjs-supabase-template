@@ -83,3 +83,6 @@ pnpm test [test-file-path]
 2. Follow the established Tailwind patterns
 3. Support dark mode using CSS variables
 4. Components should be composable and follow shadcn/ui patterns
+
+### When working with database migrations:
+- Always use 'supabase migration new migration_name' when creating new things in the database. never edit those files, if a change is needed in the database create a new migration
