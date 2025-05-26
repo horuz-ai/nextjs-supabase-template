@@ -18,7 +18,7 @@ export default function VerifyOTPPage() {
   
   const email = searchParams.get('email')
   const phone = searchParams.get('phone')
-  const type = searchParams.get('type') as 'magiclink' | 'sms' | 'signup'
+  const type = searchParams.get('type') as 'email' | 'magiclink' | 'sms' | 'signup'
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
   
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function VerifyOTPPage() {
         email: email || undefined,
         phone: phone || undefined,
         token: otp,
-        type: type || 'magiclink'
+        type: type || 'email'
       })
       
       if (result.error) {

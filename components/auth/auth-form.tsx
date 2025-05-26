@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmailPasswordForm } from './email-password-form'
-import { MagicLinkForm } from './magic-link-form'
+import { EmailOtpForm } from './email-otp-form'
 import { PhoneAuthForm } from './phone-auth-form'
 import { SocialLoginButtons } from './social-login-buttons'
 import { Separator } from '@/components/ui/separator'
@@ -43,7 +43,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           <Tabs defaultValue="email" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="magic">Magic Link</TabsTrigger>
+              <TabsTrigger value="otp">Email OTP</TabsTrigger>
               <TabsTrigger value="phone">Phone</TabsTrigger>
             </TabsList>
             
@@ -51,8 +51,8 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
               <EmailPasswordForm mode={mode} redirectTo={redirectTo} />
             </TabsContent>
             
-            <TabsContent value="magic" className="mt-4">
-              <MagicLinkForm />
+            <TabsContent value="otp" className="mt-4">
+              <EmailOtpForm redirectTo={redirectTo} />
             </TabsContent>
             
             <TabsContent value="phone" className="mt-4">

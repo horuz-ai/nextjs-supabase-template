@@ -36,7 +36,7 @@ export interface OTPData {
   email?: string
   phone?: string
   token?: string
-  type: 'signup' | 'magiclink' | 'sms'
+  type: 'signup' | 'magiclink' | 'sms' | 'email'
 }
 
 export interface AuthResponse<T = any> {

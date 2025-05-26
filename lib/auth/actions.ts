@@ -78,12 +78,18 @@ export async function signInWithOtp({ email, phone, type }: OTPData): Promise<Au
   
   try {
     if (email) {
+      const options: { shouldCreateUser?: boolean; emailRedirectTo?: string } = {
+        shouldCreateUser: type === 'signup'
+      }
+      
+      // Only set emailRedirectTo for magic links
+      if (type === 'magiclink') {
+        options.emailRedirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`
+      }
+      
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          shouldCreateUser: type === 'signup',
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`
-        }
+        options
       })
       
       if (error) throw error
