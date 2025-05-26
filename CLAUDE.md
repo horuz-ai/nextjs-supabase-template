@@ -86,3 +86,4 @@ pnpm test [test-file-path]
 
 ### When working with database migrations:
 - Always use 'supabase migration new migration_name' when creating new things in the database. never edit those files, if a change is needed in the database create a new migration
+- Always use 'supabase gen types --local' when a new migration is done so we can have the latest typescript types
