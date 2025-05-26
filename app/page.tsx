@@ -41,18 +41,11 @@ export default function Home() {
                     Google OAuth
                   </li>
                 </ul>
-                <div className="flex gap-2">
-                  <Link href="/auth/login" className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/auth/signup" className="flex-1">
-                    <Button className="w-full">
-                      Sign Up
-                    </Button>
-                  </Link>
-                </div>
+                <Link href="/auth" className="block">
+                  <Button className="w-full">
+                    Get Started
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 

@@ -17,7 +17,7 @@ export default async function ProtectedLayout({
   const { data: user, error } = await getUser()
 
   if (error || !user) {
-    redirect('/auth/login')
+    redirect('/auth')
   }
 
   return (

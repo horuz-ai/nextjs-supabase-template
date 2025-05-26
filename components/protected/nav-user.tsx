@@ -48,7 +48,7 @@ export function ProtectedNavUser({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push("/auth/login")
+    router.push("/auth")
   }
 
   const getInitials = (name: string) => {

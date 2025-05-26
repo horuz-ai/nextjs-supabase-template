@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     console.error('OAuth provider error:', { error, errorDescription })
     const errorMessage = errorDescription || error || 'Authentication failed'
     return NextResponse.redirect(
-      new URL(`/auth/login?error=${encodeURIComponent(errorMessage)}`, requestUrl.origin)
+      new URL(`/auth?error=${encodeURIComponent(errorMessage)}`, requestUrl.origin)
     )
   }
 
@@ -28,12 +28,12 @@ export async function GET(request: Request) {
     // Log the error for debugging
     console.error('Session exchange error:', sessionError)
     return NextResponse.redirect(
-      new URL(`/auth/login?error=${encodeURIComponent(sessionError.message || 'Could not complete authentication')}`, requestUrl.origin)
+      new URL(`/auth?error=${encodeURIComponent(sessionError.message || 'Could not complete authentication')}`, requestUrl.origin)
     )
   }
 
   // No code or error provided
   return NextResponse.redirect(
-    new URL(`/auth/login?error=Invalid authentication request`, requestUrl.origin)
+    new URL(`/auth?error=Invalid authentication request`, requestUrl.origin)
   )
 }

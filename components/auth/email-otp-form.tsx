@@ -1,105 +1,115 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { signInWithOtp } from '@/lib/auth/actions'
-import { useToast } from '@/hooks/use-toast'
+import { useState } from "react"
+import { createClient } from "@/utils/supabase/client"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
 
 const formSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email("Please enter a valid email address"),
 })
 
 type FormData = z.infer<typeof formSchema>
 
 interface EmailOtpFormProps {
-  redirectTo?: string
+  savedEmail?: string
+  onEmailChange?: (email: string) => void
+  onOtpRequest: (email: string) => void
 }
 
-export function EmailOtpForm({ redirectTo = '/dashboard' }: EmailOtpFormProps) {
-  const [loading, setLoading] = useState(false)
+export function EmailOtpForm({ savedEmail, onEmailChange, onOtpRequest }: EmailOtpFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const router = useRouter()
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues,
-  } = useForm<FormData>({
+  const supabase = createClient()
+
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: savedEmail || "",
+    },
   })
 
-  const onSubmit = async (data: FormData) => {
+  async function onSubmit(data: FormData) {
     try {
-      setLoading(true)
+      setIsLoading(true)
       
-      const result = await signInWithOtp({
+      const { error } = await supabase.auth.signInWithOtp({
         email: data.email,
-        type: 'email'
+        options: {
+          shouldCreateUser: true,
+        },
       })
 
-      if (result.error) {
+      if (error) {
         toast({
-          title: 'Error',
-          description: result.error.message,
-          variant: 'destructive',
+          title: "Error sending code",
+          description: error.message,
+          variant: "destructive",
         })
         return
       }
 
-      // Redirect to OTP verification page
-      const params = new URLSearchParams({
-        email: data.email,
-        type: 'email',
-        redirectTo
-      })
-      
-      router.push(`/auth/verify-otp?${params.toString()}`)
+      onEmailChange?.(data.email)
+      onOtpRequest(data.email)
       
       toast({
-        title: 'Check your email',
-        description: 'We sent you a 6-digit verification code.',
+        title: "Code sent!",
+        description: "Check your email for the verification code",
       })
-    } catch (error) {
+    } catch {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
+        title: "Something went wrong",
+        description: "Please try again later",
+        variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="you@example.com"
-          {...register('email')}
-          disabled={loading}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="name@example.com"
+                  type="email"
+                  disabled={isLoading}
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e)
+                    onEmailChange?.(e.target.value)
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
-        )}
-      </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Sending code...' : 'Send Verification Code'}
-      </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        We&apos;ll email you a 6-digit code to verify your identity.
-      </p>
-    </form>
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending code...
+            </>
+          ) : (
+            "Send Code"
+          )}
+        </Button>
+      </form>
+    </Form>
   )
 }

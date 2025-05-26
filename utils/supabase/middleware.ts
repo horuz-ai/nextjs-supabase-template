@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     // Define auth pages that authenticated users shouldn't access
-    const authPages = ['/auth/login', '/auth/signup', '/auth/reset-password']
+    const authPages = ['/auth', '/auth/login', '/auth/signup', '/auth/reset-password']
     const pathname = request.nextUrl.pathname
 
     // If user is authenticated and trying to access auth pages, redirect to dashboard

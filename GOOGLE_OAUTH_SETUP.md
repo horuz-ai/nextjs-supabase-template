@@ -97,7 +97,7 @@ pnpm supabase start
    pnpm dev
    ```
 
-2. Navigate to `http://localhost:3000/auth/login`
+2. Navigate to `http://localhost:3000/auth`
 
 3. Click "Continue with Google"
 

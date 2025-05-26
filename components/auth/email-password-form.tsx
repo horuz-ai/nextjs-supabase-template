@@ -1,111 +1,145 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { signIn, signUp } from '@/lib/auth/actions'
-import { useToast } from '@/hooks/use-toast'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
 
 const formSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
 type FormData = z.infer<typeof formSchema>
 
 interface EmailPasswordFormProps {
-  mode: 'signin' | 'signup'
-  redirectTo?: string
+  savedEmail?: string
+  onEmailChange?: (email: string) => void
 }
 
-export function EmailPasswordForm({ mode, redirectTo = '/dashboard' }: EmailPasswordFormProps) {
-  const [loading, setLoading] = useState(false)
+export function EmailPasswordForm({ savedEmail, onEmailChange }: EmailPasswordFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({
+  const supabase = createClient()
+
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: savedEmail || "",
+      password: "",
+    },
   })
 
-  const onSubmit = async (data: FormData) => {
+  async function onSubmit(data: FormData) {
     try {
-      setLoading(true)
+      setIsLoading(true)
       
-      const result = mode === 'signin' 
-        ? await signIn({ email: data.email, password: data.password })
-        : await signUp({ email: data.email, password: data.password })
+      // Try to sign in first
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
 
-      if (result.error) {
+      if (signInError) {
+        // If user doesn't exist, try to sign up
+        if (signInError.message.includes("Invalid login credentials")) {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: data.email,
+            password: data.password,
+          })
+
+          if (signUpError) {
+            toast({
+              title: "Error",
+              description: signUpError.message,
+              variant: "destructive",
+            })
+            return
+          }
+
+          toast({
+            title: "Check your email",
+            description: "We sent you a confirmation link to complete your registration",
+          })
+          return
+        }
+
         toast({
-          title: 'Error',
-          description: result.error.message,
-          variant: 'destructive',
+          title: "Error",
+          description: signInError.message,
+          variant: "destructive",
         })
         return
       }
 
-      if (mode === 'signup') {
-        toast({
-          title: 'Success',
-          description: 'Please check your email to confirm your account.',
-        })
-      } else {
-        router.push(redirectTo)
-        router.refresh()
-      }
-    } catch (error) {
+      router.push("/dashboard")
+      router.refresh()
+    } catch {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
+        title: "Something went wrong",
+        description: "Please try again later",
+        variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="you@example.com"
-          {...register('email')}
-          disabled={loading}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="name@example.com"
+                  type="email"
+                  disabled={isLoading}
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e)
+                    onEmailChange?.(e.target.value)
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
-        )}
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          {...register('password')}
-          disabled={loading}
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="••••••••"
+                  type="password"
+                  disabled={isLoading}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.password && (
-          <p className="text-sm text-red-500">{errors.password.message}</p>
-        )}
-      </div>
 
-      {mode === 'signin' && (
-        <div className="text-sm">
+        <div className="text-sm text-right">
           <Link
             href="/auth/reset-password"
             className="text-primary hover:underline"
@@ -113,29 +147,18 @@ export function EmailPasswordForm({ mode, redirectTo = '/dashboard' }: EmailPass
             Forgot your password?
           </Link>
         </div>
-      )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
-      </Button>
-
-      <div className="text-center text-sm">
-        {mode === 'signin' ? (
-          <>
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </>
-        ) : (
-          <>
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline">
-              Sign in
-            </Link>
-          </>
-        )}
-      </div>
-    </form>
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Continuing...
+            </>
+          ) : (
+            "Continue"
+          )}
+        </Button>
+      </form>
+    </Form>
   )
 }

@@ -182,7 +182,7 @@ export default function ResetPasswordPage() {
                   Try another email
                 </Button>
                 <div className="text-center">
-                  <Link href="/auth/login" className="text-sm text-primary hover:underline">
+                  <Link href="/auth" className="text-sm text-primary hover:underline">
                     Back to login
                   </Link>
                 </div>
@@ -220,7 +220,7 @@ export default function ResetPasswordPage() {
                 </Button>
                 
                 <div className="text-center">
-                  <Link href="/auth/login" className="text-sm text-primary hover:underline">
+                  <Link href="/auth" className="text-sm text-primary hover:underline">
                     Back to login
                   </Link>
                 </div>

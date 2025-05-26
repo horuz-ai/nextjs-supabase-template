@@ -1,230 +1,131 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { signInWithOtp, verifyOtp } from '@/lib/auth/actions'
-import { useToast } from '@/hooks/use-toast'
-import { OTPInput } from './otp-input'
-import { useRouter } from 'next/navigation'
+import { useState } from "react"
+import { createClient } from "@/utils/supabase/client"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
+import { CountryCodeSelect } from "./country-code-select"
 
-const phoneSchema = z.object({
-  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
+const formSchema = z.object({
+  phone: z.string().regex(/^[0-9]{10}$/, "Please enter a 10-digit phone number"),
 })
 
-const otpSchema = z.object({
-  otp: z.string().length(6, 'OTP must be 6 digits'),
-})
-
-type PhoneData = z.infer<typeof phoneSchema>
-type OTPData = z.infer<typeof otpSchema>
+type FormData = z.infer<typeof formSchema>
 
 interface PhoneAuthFormProps {
-  mode?: 'signin' | 'signup'
-  redirectTo?: string
+  savedPhone?: string
+  onPhoneChange?: (phone: string) => void
+  onOtpRequest: (phone: string) => void
 }
 
-export function PhoneAuthForm({ mode = 'signin', redirectTo = '/dashboard' }: PhoneAuthFormProps) {
-  const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'phone' | 'otp'>('phone')
-  const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
+export function PhoneAuthForm({ savedPhone, onPhoneChange, onOtpRequest }: PhoneAuthFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [countryCode, setCountryCode] = useState("PR")
   const { toast } = useToast()
-  const router = useRouter()
-  
-  const phoneForm = useForm<PhoneData>({
-    resolver: zodResolver(phoneSchema),
+  const supabase = createClient()
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      phone: savedPhone || "",
+    },
   })
 
-  const handlePhoneSubmit = async (data: PhoneData) => {
+  async function onSubmit(data: FormData) {
     try {
-      setLoading(true)
+      setIsLoading(true)
       
-      const result = await signInWithOtp({
-        phone: data.phone,
-        type: mode === 'signup' ? 'signup' : 'sms'
+      // Always use +1 for both PR and US
+      const fullPhoneNumber = `+1${data.phone}`
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: fullPhoneNumber,
       })
 
-      if (result.error) {
+      if (error) {
         toast({
-          title: 'Error',
-          description: result.error.message,
-          variant: 'destructive',
+          title: "Error sending code",
+          description: error.message,
+          variant: "destructive",
         })
         return
       }
 
-      setPhone(data.phone)
-      setStep('otp')
-      toast({
-        title: 'Code sent',
-        description: 'Please check your phone for the verification code.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOtpSubmit = async () => {
-    if (otp.length !== 6) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a 6-digit code',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    try {
-      setLoading(true)
+      onPhoneChange?.(fullPhoneNumber)
+      onOtpRequest(fullPhoneNumber)
       
-      const result = await verifyOtp({
-        phone,
-        token: otp,
-        type: 'sms'
-      })
-
-      if (result.error) {
-        toast({
-          title: 'Error',
-          description: result.error.message,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      router.push(redirectTo)
-      router.refresh()
-    } catch (error) {
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
+        title: "Code sent!",
+        description: "Check your phone for the verification code",
+      })
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please try again later",
+        variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }
-
-  const handleResend = async () => {
-    try {
-      setLoading(true)
-      
-      const result = await signInWithOtp({
-        phone,
-        type: mode === 'signup' ? 'signup' : 'sms'
-      })
-
-      if (result.error) {
-        toast({
-          title: 'Error',
-          description: result.error.message,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Code resent',
-        description: 'Please check your phone for the new verification code.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (step === 'otp') {
-    return (
-      <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-semibold">Enter verification code</h3>
-          <p className="text-sm text-muted-foreground">
-            We sent a code to {phone}
-          </p>
-        </div>
-
-        <OTPInput
-          value={otp}
-          onChange={setOtp}
-          disabled={loading}
-        />
-
-        <div className="space-y-2">
-          <Button
-            onClick={handleOtpSubmit}
-            className="w-full"
-            disabled={loading || otp.length !== 6}
-          >
-            {loading ? 'Verifying...' : 'Verify'}
-          </Button>
-
-          <div className="flex justify-between text-sm">
-            <Button
-              variant="link"
-              onClick={() => {
-                setStep('phone')
-                setOtp('')
-              }}
-              className="p-0"
-            >
-              Change number
-            </Button>
-            <Button
-              variant="link"
-              onClick={handleResend}
-              disabled={loading}
-              className="p-0"
-            >
-              Resend code
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
-    <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number</Label>
-        <Input
-          id="phone"
-          type="tel"
-          placeholder="+1234567890"
-          {...phoneForm.register('phone')}
-          disabled={loading}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone Number</FormLabel>
+              <FormControl>
+                <div className="flex gap-2">
+                  <CountryCodeSelect
+                    value={countryCode}
+                    onChange={setCountryCode}
+                    disabled={isLoading}
+                  />
+                  <Input
+                    placeholder="7871234567"
+                    type="tel"
+                    disabled={isLoading}
+                    className="flex-1"
+                    {...field}
+                    onChange={(e) => {
+                      // Only allow numbers
+                      const value = e.target.value.replace(/\D/g, '')
+                      field.onChange(value)
+                      onPhoneChange?.(value)
+                    }}
+                    maxLength={10}
+                  />
+                </div>
+              </FormControl>
+              <FormDescription>
+                Enter your 10-digit phone number
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {phoneForm.formState.errors.phone && (
-          <p className="text-sm text-red-500">{phoneForm.formState.errors.phone.message}</p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          Include your country code (e.g., +1 for US)
-        </p>
-      </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Sending...' : 'Send Code'}
-      </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        We&apos;ll send you a 6-digit verification code via SMS.
-      </p>
-    </form>
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending code...
+            </>
+          ) : (
+            "Send Code"
+          )}
+        </Button>
+      </form>
+    </Form>
   )
 }
